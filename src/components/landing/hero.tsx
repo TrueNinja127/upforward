@@ -30,22 +30,24 @@ export function Hero() {
           <AnimatedMark className="relative w-full" delay={0.2} />
         </motion.div>
 
-        <motion.h1
-          {...fade(1.4)}
-          className="headline relative mt-16 text-[52px] sm:mt-20 sm:text-[88px] lg:text-[112px]"
-        >
-          Built to rise.
+        <motion.h1 {...fade(0.35)} className="relative mt-16 sm:mt-20">
+          <span className="block text-[17px] font-medium text-white/60 sm:text-[19px]">
+            Upforward — senior software engineering team
+          </span>
+          <span className="headline mt-3 block text-[52px] sm:text-[88px] lg:text-[112px]">
+            Built to rise.
+          </span>
         </motion.h1>
 
         <motion.p
-          {...fade(1.55)}
+          {...fade(0.5)}
           className="relative mt-6 max-w-2xl text-[19px] leading-relaxed text-pretty text-white/65 sm:text-[22px]"
         >
-          Upforward is a senior software engineering team. We design, build and
-          launch products that move companies up — and forward.
+          We design, build and launch web platforms, mobile apps and AI
+          products that move companies up — and forward.
         </motion.p>
 
-        <motion.div {...fade(1.7)} className="relative mt-10 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+        <motion.div {...fade(0.65)} className="relative mt-10 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
           <PillLink href="#contact" className="h-14 px-8 text-[17px] font-medium">
             Start a project
           </PillLink>
@@ -59,7 +61,7 @@ export function Hero() {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 2.4, duration: 1 }}
+        transition={{ delay: 1.6, duration: 1 }}
         className="absolute bottom-8 left-1/2 hidden h-14 w-px -translate-x-1/2 overflow-hidden bg-white/15 sm:block"
         aria-hidden
       >

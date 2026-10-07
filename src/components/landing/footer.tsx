@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpIcon, ArrowUpRightIcon } from "lucide-react";
 import { LogoMark } from "./logo";
 import { Container } from "./section-heading";
+import { site } from "@/lib/site";
 
 const columns = [
   {
@@ -55,10 +56,10 @@ export function Footer() {
               </span>
               <h2 className="headline mt-8 text-[36px] sm:text-[48px]">Have a project in mind?</h2>
               <a
-                href="mailto:hello@upforward.org"
+                href={`mailto:${site.email}`}
                 className="group mt-6 inline-flex items-center gap-4 text-[22px] font-medium sm:text-[28px]"
               >
-                hello@upforward.org
+                {site.email}
                 <span className="flex size-11 items-center justify-center rounded-full bg-white text-black transition-transform duration-500 group-hover:rotate-45">
                   <ArrowUpRightIcon className="size-5" />
                 </span>

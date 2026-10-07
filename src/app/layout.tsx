@@ -52,6 +52,13 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  // Paste the codes from Google Search Console / Bing Webmaster Tools into these env vars.
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
+  },
 };
 
 export const viewport: Viewport = {
