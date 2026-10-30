@@ -10,10 +10,10 @@ import { ease } from "./motion";
 import { PillLink } from "./pill-button";
 
 const navLinks = [
-  { href: "#capabilities", label: "Capabilities" },
-  { href: "#process", label: "Process" },
-  { href: "#work", label: "Work" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#capabilities", label: "Capabilities" },
+  { href: "/#process", label: "Process" },
+  { href: "/#work", label: "Work" },
+  { href: "/#faq", label: "FAQ" },
 ];
 
 export function Header() {
@@ -50,7 +50,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <PillLink href="#contact" className="hidden h-11 text-[15px] font-medium sm:inline-flex">
+          <PillLink href="/#contact" className="hidden h-11 text-[15px] font-medium sm:inline-flex">
             Start a project
           </PillLink>
           <button
@@ -93,7 +93,7 @@ export function Header() {
               ))}
             </ul>
             <div className="px-6 pt-8">
-              <PillLink href="#contact" onClick={() => setOpen(false)} className="h-14 w-full">
+              <PillLink href="/#contact" onClick={() => setOpen(false)} className="h-14 w-full">
                 Start a project
               </PillLink>
             </div>

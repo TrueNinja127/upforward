@@ -8,11 +8,11 @@ const columns = [
   {
     title: "Explore",
     links: [
-      { label: "Capabilities", href: "#capabilities" },
-      { label: "Process", href: "#process" },
-      { label: "Work", href: "#work" },
-      { label: "Testimonials", href: "#testimonials" },
-      { label: "FAQ", href: "#faq" },
+      { label: "Capabilities", href: "/#capabilities" },
+      { label: "Process", href: "/#process" },
+      { label: "Work", href: "/#work" },
+      { label: "Testimonials", href: "/#testimonials" },
+      { label: "FAQ", href: "/#faq" },
     ],
   },
   {
@@ -21,7 +21,7 @@ const columns = [
       { label: "About", href: "#" },
       { label: "Careers", href: "#" },
       { label: "Journal", href: "#" },
-      { label: "Contact", href: "#contact" },
+      { label: "Contact", href: "/#contact" },
     ],
   },
   {
@@ -94,8 +94,8 @@ export function Footer() {
           <div className="mt-16 flex flex-col gap-6 border-t border-white/10 pt-8 text-[14px] text-white/50 sm:flex-row sm:items-center sm:justify-between">
             <p>© {new Date().getFullYear()} Upforward. All rights reserved.</p>
             <div className="flex items-center gap-6">
-              <Link href="#" className="transition-colors hover:text-white">Privacy</Link>
-              <Link href="#" className="transition-colors hover:text-white">Terms</Link>
+              <Link href="/privacy" className="transition-colors hover:text-white">Privacy</Link>
+              <Link href="/terms" className="transition-colors hover:text-white">Terms</Link>
               <a
                 href="#"
                 aria-label="Back to top"
