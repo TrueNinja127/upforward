@@ -12,6 +12,7 @@ import type {
 import { applicantTokenHash } from "@/lib/session";
 import { broadcast } from "./broadcast";
 import { adminInboxTopic, conversationTopic, EVENTS, type MessageEvent } from "./channels";
+import { resetNotificationMarker, scheduleUnreadNotification } from "./notify";
 
 /*
  * Data Access Layer. Every function here runs with the service-role key, so
@@ -29,10 +30,16 @@ export const getApplicantContext = cache(async (): Promise<ApplicantContext | nu
   const hash = await applicantTokenHash();
   if (!hash) return null;
   const db = supabaseAdmin();
+  const { data: session } = await db
+    .from("applicant_sessions")
+    .select("application_id")
+    .eq("token_hash", hash)
+    .maybeSingle();
+  if (!session) return null;
   const { data: application } = await db
     .from("applications")
     .select("*")
-    .eq("session_token_hash", hash)
+    .eq("id", session.application_id)
     .maybeSingle();
   if (!application) return null;
   const { data: conversation } = await db
@@ -79,6 +86,7 @@ export async function createMessage(
     broadcast(await conversationTopic(conversationId), EVENTS.message, event),
     broadcast(await adminInboxTopic(), EVENTS.inboxUpdate, { conversation_id: conversationId }),
   ]);
+  scheduleUnreadNotification(conversationId, sender);
   return data;
 }
 
@@ -94,6 +102,7 @@ export async function markRead(conversationId: string, reader: MessageSender): P
   if (error) throw error;
   if (!count) return;
   await Promise.all([
+    resetNotificationMarker(conversationId, reader),
     broadcast(await conversationTopic(conversationId), EVENTS.read, { reader }),
     reader === "admin"
       ? broadcast(await adminInboxTopic(), EVENTS.inboxUpdate, { conversation_id: conversationId })

@@ -1,8 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { randomToken, sha256Hex } from "@/lib/crypto";
 import { createMessage } from "@/lib/chat/dal";
+import { scheduleNewApplicationNotification } from "@/lib/chat/notify";
+import { createApplicantSession } from "@/lib/chat/tokens";
 import { getJob, isJobRole } from "@/lib/jobs";
 import { setApplicantCookie } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -52,14 +53,13 @@ export async function submitApplication(_prev: ApplyState, formData: FormData): 
     return { fieldErrors, values };
   }
 
-  const token = randomToken(32);
   const job = getJob(role)!;
 
   try {
     const db = supabaseAdmin();
     const { data: application, error: appError } = await db
       .from("applications")
-      .insert({ ...values, role: job.slug, session_token_hash: await sha256Hex(token) })
+      .insert({ ...values, role: job.slug })
       .select("id, name")
       .single();
     if (appError) throw appError;
@@ -78,7 +78,10 @@ export async function submitApplication(_prev: ApplyState, formData: FormData): 
       `Hi ${firstName}, thanks for applying for the ${job.title} role! We've received your application and someone from the Upforward team will reply here shortly. Feel free to ask us anything in the meantime.`
     );
 
-    await setApplicantCookie(token);
+    const sessionToken = await createApplicantSession(application.id);
+    await setApplicantCookie(sessionToken);
+
+    scheduleNewApplicationNotification({ conversationId: conversation.id, ...values, role: job.slug });
   } catch (err) {
     console.error("[apply] failed", err);
     return {

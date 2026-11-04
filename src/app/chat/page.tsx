@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, LogOutIcon } from "lucide-react";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { ChatSignInForm } from "@/components/chat/chat-sign-in-form";
 import { Logo } from "@/components/landing/logo";
-import { PillLink } from "@/components/landing/pill-button";
 import { conversationTopic } from "@/lib/chat/channels";
 import { getApplicantContext, listMessages } from "@/lib/chat/dal";
 import { applicationStatusLabel, getJob } from "@/lib/jobs";
 import { site } from "@/lib/site";
-import { markApplicantRead, sendApplicantMessage, syncApplicantMessages } from "./actions";
+import { markApplicantRead, sendApplicantMessage, signOutApplicant, syncApplicantMessages } from "./actions";
 
 export const metadata: Metadata = {
   title: "Chat with Upforward",
@@ -17,9 +17,9 @@ export const metadata: Metadata = {
 };
 
 export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
-  const [{ welcome }, ctx] = await Promise.all([searchParams, getApplicantContext()]);
+  const [{ welcome, link }, ctx] = await Promise.all([searchParams, getApplicantContext()]);
 
-  if (!ctx) return <NoApplication />;
+  if (!ctx) return <SignIn linkProblem={typeof link === "string" ? link : undefined} />;
 
   const { application, conversation } = ctx;
   const [messages, topic] = await Promise.all([listMessages(conversation.id), conversationTopic(conversation.id)]);
@@ -57,12 +57,21 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
               </Row>
             </dl>
             <p className="mt-6 text-[13px] leading-relaxed text-white/40">
-              This chat stays open on this device. If you lose access, email us at{" "}
+              You can come back to this chat any time from the Chat link on our site. We&apos;ll also email you at{" "}
+              <span className="text-white/70">{application.email}</span> when the team replies. Questions? Email{" "}
               <a href={`mailto:${site.email}`} className="text-white/70 underline underline-offset-2">
                 {site.email}
               </a>
               .
             </p>
+            <form action={signOutApplicant} className="mt-5">
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 text-[13px] text-white/50 transition-colors hover:text-white"
+              >
+                <LogOutIcon className="size-3.5" /> Not you? Sign out on this device
+              </button>
+            </form>
           </div>
         </aside>
 
@@ -91,23 +100,37 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function NoApplication() {
+const linkMessages: Record<string, string> = {
+  expired: "That sign-in link has expired. Enter your email and we'll send a fresh one.",
+  used: "That sign-in link was already used. Enter your email to get a new one.",
+  invalid: "That sign-in link isn't valid. Enter your email to get a new one.",
+};
+
+function SignIn({ linkProblem }: { linkProblem?: string }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex h-20 shrink-0 items-center px-5 sm:px-8">
+      <header className="flex h-20 shrink-0 items-center justify-between px-5 sm:px-8">
         <Logo />
+        <Link href="/" className="inline-flex items-center gap-1.5 text-[15px] text-white/60 transition-colors hover:text-white">
+          <ArrowLeftIcon className="size-4" /> Back to site
+        </Link>
       </header>
       <main className="flex flex-1 items-center justify-center px-5 pb-20">
-        <div className="max-w-lg text-center">
+        <div className="w-full max-w-lg text-center">
           <p className="text-[17px] font-medium text-white/50">Chat</p>
-          <h1 className="headline mt-4 text-[40px] sm:text-[56px]">No application found.</h1>
-          <p className="mt-6 text-[17px] leading-relaxed text-white/60">
-            This chat opens automatically once you apply for a role. Pick a position to get started, and you&apos;ll be
-            talking with our team in under a minute.
+          <h1 className="headline mt-4 text-[40px] sm:text-[56px]">Welcome back.</h1>
+          <p className="mt-5 text-[17px] leading-relaxed text-white/60">
+            Enter the email you applied with and we&apos;ll send you a secure link that opens your chat with the
+            Upforward team.
           </p>
-          <PillLink href="/#jobs" className="mt-8 h-14 px-8 font-medium">
-            See open roles
-          </PillLink>
+          {linkProblem && linkMessages[linkProblem] && (
+            <p role="alert" className="mt-5 rounded-[20px] bg-white px-4 py-3 text-[14px] font-medium text-black">
+              {linkMessages[linkProblem]}
+            </p>
+          )}
+          <div className="mt-8">
+            <ChatSignInForm />
+          </div>
         </div>
       </main>
     </div>
