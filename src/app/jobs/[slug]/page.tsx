@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeftIcon, CheckIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { Footer } from "@/components/landing/footer";
 import { Header } from "@/components/landing/header";
 import { MotionProvider } from "@/components/landing/motion";
@@ -105,8 +105,8 @@ export default async function JobPage({ params }: PageProps<"/jobs/[slug]">) {
                 <ul className="grid gap-3 sm:grid-cols-3">
                   {requirements.map((r) => (
                     <li key={r.title} className="rounded-[24px] bg-card p-5">
-                      <span className="flex size-6 items-center justify-center rounded-full bg-white text-black">
-                        <CheckIcon className="size-3.5" />
+                      <span className="flex size-10 items-center justify-center rounded-full bg-white text-black">
+                        <r.icon className="size-[18px]" />
                       </span>
                       <span className="mt-4 block text-[15px] font-semibold">{r.title}</span>
                       <span className="mt-1 block text-[13px] leading-relaxed text-white/50">{r.detail}</span>

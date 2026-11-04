@@ -2,13 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { EVENTS, type MessageEvent } from "@/lib/chat/channels";
+import { EVENTS, type MessageDeletedEvent, type MessageEvent, type MessageUpdatedEvent } from "@/lib/chat/channels";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { MessageSender } from "@/lib/supabase/types";
 
 type Handlers = {
   onMessage: (message: MessageEvent) => void;
+  onUpdated: (event: MessageUpdatedEvent) => void;
+  onDeleted: (event: MessageDeletedEvent) => void;
   onRead: (reader: MessageSender) => void;
   /** Fired when the socket re-subscribes after a drop, so the caller can catch up. */
   onReconnect: () => void;
@@ -50,6 +52,8 @@ export function useChatChannel(topic: string, me: MessageSender, handlers: Handl
         handlersRef.current.onMessage(payload as MessageEvent);
         if ((payload as MessageEvent).sender !== me) setPeerTyping(false);
       })
+      .on("broadcast", { event: EVENTS.updated }, ({ payload }) => handlersRef.current.onUpdated(payload as MessageUpdatedEvent))
+      .on("broadcast", { event: EVENTS.deleted }, ({ payload }) => handlersRef.current.onDeleted(payload as MessageDeletedEvent))
       .on("broadcast", { event: EVENTS.read }, ({ payload }) => {
         const reader = (payload as { reader: MessageSender }).reader;
         if (reader !== me) handlersRef.current.onRead(reader);

@@ -71,6 +71,15 @@ export type ConversationRow = {
   admin_notified_at: string | null;
 };
 
+/** A file stored in the "applicant-attachments" bucket. `url` is a short-lived signed link added when serving. */
+export type Attachment = {
+  path: string;
+  name: string;
+  type: string;
+  size: number;
+  url?: string;
+};
+
 export type MessageRow = {
   id: string;
   conversation_id: string;
@@ -78,6 +87,25 @@ export type MessageRow = {
   body: string;
   created_at: string;
   read_at: string | null;
+  /** Set when the author changed the text after sending. */
+  edited_at: string | null;
+  /** Soft delete: the row stays (body cleared) so both sides can show "message deleted". */
+  deleted_at: string | null;
+  attachments: Attachment[];
+};
+
+export type PushScope = "admin" | "applicant";
+
+export type PushSubscriptionRow = {
+  id: string;
+  scope: PushScope;
+  application_id: string | null;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent: string | null;
+  created_at: string;
+  last_seen_at: string;
 };
 
 /* Admin panel tables (managed by Prisma in tnboard) ------------------------------- */
@@ -132,6 +160,10 @@ export type Database = {
       >;
       applicant_conversations: Table<ConversationRow, Pick<ConversationRow, "application_id"> & Partial<ConversationRow>>;
       applicant_messages: Table<MessageRow, Pick<MessageRow, "conversation_id" | "sender" | "body"> & Partial<MessageRow>>;
+      push_subscriptions: Table<
+        PushSubscriptionRow,
+        Pick<PushSubscriptionRow, "scope" | "endpoint" | "p256dh" | "auth"> & Partial<PushSubscriptionRow>
+      >;
       Settings: Table<SettingsRow, Partial<SettingsRow>>;
       Notification: Table<NotificationRow, Pick<NotificationRow, "id" | "type" | "title"> & Partial<NotificationRow>>;
       ActivityLog: Table<ActivityLogRow, Pick<ActivityLogRow, "id" | "type" | "message"> & Partial<ActivityLogRow>>;

@@ -8,7 +8,8 @@ import { conversationTopic } from "@/lib/chat/channels";
 import { getApplicantContext, listMessages } from "@/lib/chat/dal";
 import { applicationStatusLabel } from "@/lib/jobs";
 import { site } from "@/lib/site";
-import { markApplicantRead, sendApplicantMessage, signOutApplicant, syncApplicantMessages } from "./actions";
+import { pushPublicKey } from "@/lib/push";
+import { deleteApplicantMessage, editApplicantMessage, markApplicantRead, registerApplicantPush, sendApplicantMessage, signOutApplicant, syncApplicantMessages } from "./actions";
 
 export const metadata: Metadata = {
   title: "Chat with Upforward",
@@ -26,7 +27,7 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
   const topic = conversationTopic(conversation);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex h-dvh flex-col">
       <header className="flex h-20 shrink-0 items-center justify-between px-5 sm:px-8">
         <Logo />
         <Link href="/" className="inline-flex items-center gap-1.5 text-[15px] text-white/60 transition-colors hover:text-white">
@@ -34,8 +35,9 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
         </Link>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col gap-4 px-3 pb-4 sm:px-6 sm:pb-6 lg:grid lg:grid-cols-12 lg:items-stretch">
-        <aside className="lg:col-span-4">
+      {/* The page is pinned to the viewport: only the message list (and the details card) scroll. */}
+      <main className="mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col gap-4 px-3 pb-4 sm:px-6 sm:pb-6 lg:grid lg:grid-cols-12 lg:items-stretch">
+        <aside className="min-h-0 shrink-0 lg:col-span-4 lg:overflow-y-auto">
           <div className="rounded-[32px] bg-card p-6 sm:p-7">
             {welcome === "1" && (
               <p className="mb-5 rounded-[20px] bg-white px-4 py-3 text-[14px] font-medium text-black">
@@ -44,7 +46,7 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
             )}
             <p className="text-[13px] text-white/50">Your application</p>
             <h1 className="headline mt-2 text-[28px]">{job?.title ?? "Open role"}</h1>
-            <dl className="mt-5 space-y-3 text-[14px]">
+            <dl className="mt-5 hidden space-y-3 text-[14px] lg:block">
               <Row label="Status">
                 <span className="rounded-full bg-black px-3 py-1 text-[13px]">{applicationStatusLabel[application.status]}</span>
               </Row>
@@ -56,7 +58,7 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
                 {new Date(application.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
               </Row>
             </dl>
-            <p className="mt-6 text-[13px] leading-relaxed text-white/40">
+            <p className="mt-6 hidden text-[13px] leading-relaxed text-white/40 lg:block">
               You can come back to this chat any time from the Chat link on our site. We&apos;ll also email you at{" "}
               <span className="text-white/70">{application.email}</span> when the team replies. Questions? Email{" "}
               <a href={`mailto:${site.email}`} className="text-white/70 underline underline-offset-2">
@@ -64,7 +66,7 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
               </a>
               .
             </p>
-            <form action={signOutApplicant} className="mt-5">
+            <form action={signOutApplicant} className="mt-4 lg:mt-5">
               <button
                 type="submit"
                 className="inline-flex items-center gap-1.5 text-[13px] text-white/50 transition-colors hover:text-white"
@@ -76,15 +78,19 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
         </aside>
 
         <ChatRoom
-          className="h-[70dvh] lg:col-span-8 lg:h-auto lg:min-h-[640px]"
+          className="min-h-0 flex-1 lg:col-span-8"
           topic={topic}
           me="applicant"
           peerName="Upforward team"
           peerInitials="UF"
           initialMessages={messages}
           send={sendApplicantMessage}
+          edit={editApplicantMessage}
+          remove={deleteApplicantMessage}
           markRead={markApplicantRead}
           sync={syncApplicantMessages}
+          pushPublicKey={pushPublicKey()}
+          registerPush={registerApplicantPush}
         />
       </main>
     </div>

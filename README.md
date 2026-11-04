@@ -42,6 +42,19 @@ last read the conversation, one email goes out. Reading the conversation in the 
 streak produces exactly one email. The check runs with Next.js `after()`, so on serverless hosts keep the delay below the
 function's maximum duration.
 
+## Chat features
+
+- **Attachments:** images, PDFs, Office documents, text, CSV and ZIP files up to 10 MB each (5 per message). They are
+  stored in the private `applicant-attachments` bucket of the shared Supabase project and served through signed links
+  that expire after an hour. The server action body limit is raised in `next.config.ts` for this.
+- **Edit and delete:** hovering a bubble shows copy, and edit / delete for your own messages. Deletes are soft: the
+  text and files are removed and both sides see "This message was deleted".
+- **Notifications:** the "Notify me" button asks for permission and, when `NEXT_PUBLIC_VAPID_PUBLIC_KEY` and
+  `VAPID_PRIVATE_KEY` are set, subscribes the browser to Web Push through `public/sw.js`. Replies from the team then
+  arrive as system notifications even when the site is closed (Chrome, Edge, Firefox, Opera, Safari 16+ on macOS;
+  on iOS only after adding the site to the Home Screen). Without the keys, alerts only show while the tab is open.
+  Generate the keys once with `npx web-push generate-vapid-keys` and configure the same pair in the admin panel.
+
 ## How the jobs funnel works
 
 | Route                  | Who       | What                                                                                            |

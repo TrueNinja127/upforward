@@ -1,3 +1,4 @@
+import { FlagIcon, LaptopIcon, ScreenShareIcon, type LucideIcon } from "lucide-react";
 import type { ApplicationStatus, JobRow } from "@/lib/supabase/types";
 
 /*
@@ -9,19 +10,22 @@ import type { ApplicationStatus, JobRow } from "@/lib/supabase/types";
 export type Job = JobRow;
 
 /** Requirements every applicant confirms on the form (the three checkboxes). */
-export const requirements = [
+export const requirements: { title: string; detail: string; icon: LucideIcon }[] = [
   {
     title: "US citizen",
     detail: "You must be a United States citizen currently living in the US.",
+    icon: FlagIcon,
   },
   {
     title: "Own laptop or MacBook",
     detail: "A reliable personal laptop or MacBook with a stable internet connection.",
+    icon: LaptopIcon,
   },
   {
     title: "Remote access for development",
     detail:
       "You are comfortable providing remote access to your machine so our engineering team can set up and run development tooling.",
+    icon: ScreenShareIcon,
   },
 ];
 

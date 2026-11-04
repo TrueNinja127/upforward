@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRightIcon, CheckIcon } from "lucide-react";
+import { ArrowUpRightIcon } from "lucide-react";
 import { requirements, sharedCompensation } from "@/lib/jobs";
 import { listOpenJobs } from "@/lib/jobs-db";
 import { site } from "@/lib/site";
@@ -103,8 +103,8 @@ export async function Jobs() {
                   key={r.title}
                   className="flex gap-3 rounded-[24px] bg-black p-5"
                 >
-                  <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-black">
-                    <CheckIcon className="size-3.5" />
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white text-black">
+                    <r.icon className="size-[18px]" />
                   </span>
                   <span>
                     <span className="block text-[15px] font-semibold">

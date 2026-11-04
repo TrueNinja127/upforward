@@ -4,6 +4,7 @@ import { adminNewApplicationEmail, adminUnreadEmail, isEmailConfigured, sendEmai
 import { site } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { ApplicationRow, ConversationRow, JobRow, MessageSender } from "@/lib/supabase/types";
+import { pushToAdmins } from "@/lib/push";
 import { createPanelNotification, logPanelActivity, publishPanelEvent } from "./panel";
 
 /*
@@ -42,6 +43,11 @@ export async function notifyPanelOfApplication(input: { application: Application
   } catch (err) {
     console.error("[notify] panel update failed", err);
   }
+  after(() =>
+    pushToAdmins({ title: `New application: ${application.name}`, body: `${job.title} · ${application.location}`, url: link, tag: `application-${application.id}` }).catch((err) =>
+      console.error("[push] admin push failed", err)
+    )
+  );
 
   const to = adminEmail();
   if (!to || !isEmailConfigured()) return;
@@ -87,6 +93,15 @@ export async function notifyPanelOfApplicantMessage(input: {
   } catch (err) {
     console.error("[notify] panel update failed", err);
   }
+  after(() =>
+    pushToAdmins({
+      title: `${application.name}${job ? ` · ${job.title}` : ""}`,
+      body: body.replace(/\s+/g, " ").slice(0, 160),
+      url: link,
+      tag: `conversation-${conversation.id}`,
+      skipIfFocused: true,
+    }).catch((err) => console.error("[push] admin push failed", err))
+  );
   scheduleAdminUnreadEmail(conversation.id);
 }
 

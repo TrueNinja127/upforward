@@ -1,9 +1,13 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createMessage, getApplicantContext, listMessages, markRead } from "@/lib/chat/dal";
+import { filesFromForm } from "@/lib/chat/attachments";
+import { MAX_ATTACHMENTS_PER_MESSAGE, validateAttachmentFiles } from "@/lib/chat/attachment-rules";
+import { createMessage, deleteMessage, editMessage, getApplicantContext, listMessages, markRead } from "@/lib/chat/dal";
 import { consumeLoginToken, createLoginToken, deleteApplicantSession, findApplicationByEmail, recentlyIssuedLoginLink } from "@/lib/chat/tokens";
 import { chatSignInEmail, isEmailConfigured, sendEmail } from "@/lib/email";
+import { deletePushSubscription, savePushSubscription, type BrowserSubscription } from "@/lib/push";
 import { applicantTokenHash, clearApplicantCookie, setApplicantCookie } from "@/lib/session";
 import { site } from "@/lib/site";
 import type { MessageRow } from "@/lib/supabase/types";
@@ -18,17 +22,47 @@ async function requireApplicant() {
 
 /* Messaging ------------------------------------------------------------------- */
 
-export async function sendApplicantMessage(body: string): Promise<SendResult> {
-  const trimmed = typeof body === "string" ? body.trim() : "";
-  if (!trimmed) return { error: "Message can't be empty." };
-  if (trimmed.length > 4000) return { error: "Message is too long (4000 characters max)." };
+/** Sends a message. `formData` carries `body` (text) and optional `files`. */
+export async function sendApplicantMessage(formData: FormData): Promise<SendResult> {
+  const raw = formData.get("body");
+  const body = typeof raw === "string" ? raw.trim() : "";
+  const files = filesFromForm(formData).slice(0, MAX_ATTACHMENTS_PER_MESSAGE + 1);
+  if (!body && !files.length) return { error: "Message can't be empty." };
+  if (body.length > 4000) return { error: "Message is too long (4000 characters max)." };
+  const problem = validateAttachmentFiles(files);
+  if (problem) return { error: problem };
   try {
     const ctx = await requireApplicant();
-    const message = await createMessage(ctx, "applicant", trimmed);
+    const message = await createMessage(ctx, "applicant", body, files);
     return { message };
   } catch (err) {
     console.error("[chat] applicant send failed", err);
     return { error: err instanceof Error ? err.message : "Could not send your message." };
+  }
+}
+
+export async function editApplicantMessage(messageId: string, body: string): Promise<SendResult> {
+  const trimmed = typeof body === "string" ? body.trim() : "";
+  if (!trimmed) return { error: "Message can't be empty." };
+  if (trimmed.length > 4000) return { error: "Message is too long (4000 characters max)." };
+  try {
+    const { conversation } = await requireApplicant();
+    const message = await editMessage(conversation, "applicant", messageId, trimmed);
+    return { message };
+  } catch (err) {
+    console.error("[chat] applicant edit failed", err);
+    return { error: err instanceof Error ? err.message : "Could not edit your message." };
+  }
+}
+
+export async function deleteApplicantMessage(messageId: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const { conversation } = await requireApplicant();
+    await deleteMessage(conversation, "applicant", messageId);
+    return { ok: true };
+  } catch (err) {
+    console.error("[chat] applicant delete failed", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Could not delete your message." };
   }
 }
 
@@ -50,6 +84,30 @@ export async function syncApplicantMessages(after: string | null): Promise<Messa
   } catch (err) {
     console.error("[chat] applicant sync failed", err);
     return [];
+  }
+}
+
+/* Push notifications ------------------------------------------------------------- */
+
+export async function registerApplicantPush(subscription: BrowserSubscription): Promise<{ ok: boolean; error?: string }> {
+  try {
+    if (!subscription?.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) return { ok: false, error: "Invalid subscription." };
+    const { application } = await requireApplicant();
+    const userAgent = (await headers()).get("user-agent");
+    await savePushSubscription({ ...subscription, scope: "applicant", applicationId: application.id, userAgent });
+    return { ok: true };
+  } catch (err) {
+    console.error("[push] register failed", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Could not enable notifications." };
+  }
+}
+
+export async function unregisterApplicantPush(endpoint: string): Promise<void> {
+  try {
+    await requireApplicant();
+    if (endpoint) await deletePushSubscription(endpoint);
+  } catch (err) {
+    console.error("[push] unregister failed", err);
   }
 }
 

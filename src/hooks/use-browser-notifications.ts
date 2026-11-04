@@ -21,7 +21,11 @@ export function useBrowserNotifications() {
 
   const request = useCallback(async () => {
     if (typeof Notification === "undefined") return "unsupported" as const;
-    const result = await Notification.requestPermission();
+    // Safari (and older browsers) still use the callback form; wrap both.
+    const result = await new Promise<NotificationPermission>((resolve) => {
+      const maybe = Notification.requestPermission((r) => resolve(r));
+      if (maybe && typeof (maybe as Promise<NotificationPermission>).then === "function") (maybe as Promise<NotificationPermission>).then(resolve);
+    });
     setPermission(result);
     return result;
   }, []);

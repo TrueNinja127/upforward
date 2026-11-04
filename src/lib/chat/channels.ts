@@ -1,4 +1,4 @@
-import type { ConversationRow, MessageSender } from "@/lib/supabase/types";
+import type { Attachment, ConversationRow, MessageSender } from "@/lib/supabase/types";
 
 /*
  * Realtime channel topics. Broadcast channels are public in Supabase, so the
@@ -21,10 +21,26 @@ export type MessageEvent = {
   sender: MessageSender;
   body: string;
   created_at: string;
+  /** Attachments with signed download links (valid for an hour). */
+  attachments: Attachment[];
+};
+
+export type MessageUpdatedEvent = {
+  id: string;
+  conversation_id: string;
+  body: string;
+  edited_at: string;
+};
+
+export type MessageDeletedEvent = {
+  id: string;
+  conversation_id: string;
 };
 
 export const EVENTS = {
   message: "message",
+  updated: "message-updated",
+  deleted: "message-deleted",
   typing: "typing",
   read: "read",
 } as const;
