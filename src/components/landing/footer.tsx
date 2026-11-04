@@ -11,6 +11,7 @@ const columns = [
       { label: "Capabilities", href: "/#capabilities" },
       { label: "Process", href: "/#process" },
       { label: "Work", href: "/#work" },
+      { label: "Jobs", href: "/#jobs" },
       { label: "Testimonials", href: "/#testimonials" },
       { label: "FAQ", href: "/#faq" },
     ],
@@ -19,7 +20,7 @@ const columns = [
     title: "Company",
     links: [
       { label: "About", href: "#" },
-      { label: "Careers", href: "#" },
+      { label: "Careers", href: "/#jobs" },
       { label: "Journal", href: "#" },
       { label: "Contact", href: "/#contact" },
     ],

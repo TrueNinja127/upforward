@@ -13,51 +13,57 @@ const AUTOPLAY_SECONDS = 8;
 const testimonials = [
   {
     name: "Sarah Mitchell",
-    role: "CTO",
-    company: "Northwind Logistics",
+    role: "Virtual Assistant",
+    location: "Texas",
     avatar: "/avatars/sarah-mitchell.webp",
-    quote: "Upforward rebuilt our core platform in four months. We ship twice as often now — and sleep better doing it.",
-    result: "2× release frequency",
+    quote:
+      "Upforward has very powerful technology skills. I'm in Texas and worked with them for over six months. They were very kind, the service was really good, and they pay me 40% of incoming revenue. It changed my life. I love this company.",
+    result: "40% revenue share",
   },
   {
     name: "Ethan Brooks",
-    role: "VP Engineering",
-    company: "Vertex Finance",
+    role: "US Partnership",
+    location: "Florida",
     avatar: "/avatars/ethan-brooks.webp",
-    quote: "Their AI team turned a vague idea into the feature our customers now can't live without.",
-    result: "12 hrs saved per analyst, weekly",
+    quote:
+      "I've partnered with Upforward from Florida for almost a year. Their engineers are seriously talented, and every client I introduce gets looked after. The 40% share arrives on time, every month.",
+    result: "Paid on time, every month",
   },
   {
     name: "Emily Carter",
-    role: "Head of Product",
-    company: "Lumen Health",
+    role: "Remote Connector",
+    location: "Ohio",
     avatar: "/avatars/emily-carter.webp",
-    quote: "They felt like part of our company from day one — honest about trade-offs and obsessed with quality.",
-    result: "4.8 App Store rating",
+    quote:
+      "I provide the remote development setup from my home in Ohio, and the team handles everything else. They're patient, clear and respectful of my time. The extra income has made a real difference for my family.",
+    result: "8 months and counting",
   },
   {
     name: "David Hale",
-    role: "Founder & CEO",
-    company: "Halcyon",
+    role: "US Partnership",
+    location: "California",
     avatar: "/avatars/david-hale.webp",
-    quote: "We went from a napkin sketch to paying customers in six weeks. I've never seen a team execute like this.",
-    result: "6 weeks to launch",
+    quote:
+      "I was skeptical at first, but after six months working with Upforward from California I can say they're the real deal. Strong technology, honest communication and a fair 40% split.",
+    result: "6+ months together",
   },
   {
     name: "Lena Novak",
-    role: "Head of Platform",
-    company: "Monolith",
+    role: "Virtual Assistant",
+    location: "New York",
     avatar: "/avatars/lena-novak.webp",
-    quote: "Our infrastructure finally runs itself. Deploys went from a monthly ritual to something we do every day.",
-    result: "30× more deploys",
+    quote:
+      "Working with Upforward from New York has been the best decision I've made in years. Kind people, great service, and I earn 40% of the incoming work I help manage. I finally feel in control of my career.",
+    result: "Full flexibility, from home",
   },
   {
     name: "Daniel Reyes",
-    role: "COO",
-    company: "Arcadia",
+    role: "Remote Connector",
+    location: "Arizona",
     avatar: "/avatars/daniel-reyes.webp",
-    quote: "Weekly demos meant we always knew exactly where things stood. Zero surprises on launch day.",
-    result: "0 launch-day incidents",
+    quote:
+      "The engineering team is top-notch and they always keep me in the loop. I just keep my laptop online here in Arizona, and the 40% share covers more than my rent. I'd recommend them to anyone.",
+    result: "Covers rent and more",
   },
 ];
 
@@ -85,7 +91,7 @@ export function Testimonial() {
           <div>
             <p className="text-[17px] font-medium text-white/50">In their words</p>
             <h2 className="headline mt-4 max-w-4xl text-[44px] sm:text-[64px] lg:text-[72px]">
-              Trusted by teams who ship.
+              Trusted by the people we work with.
             </h2>
           </div>
           <div className="flex items-center gap-5">
@@ -96,7 +102,7 @@ export function Testimonial() {
             </div>
             <div>
               <p className="headline text-[28px] leading-none">4.9 / 5</p>
-              <p className="mt-1 text-[14px] text-white/50">Average client rating</p>
+              <p className="mt-1 text-[14px] text-white/50">Average partner rating</p>
             </div>
           </div>
         </Reveal>
@@ -116,7 +122,7 @@ export function Testimonial() {
                 >
                   <Image
                     src={t.avatar}
-                    alt={`${t.name}, ${t.role} at ${t.company}`}
+                    alt={`${t.name}, ${t.role} in ${t.location}`}
                     fill
                     sizes="(min-width: 1024px) 520px, 100vw"
                     className="object-cover object-top grayscale"
@@ -124,7 +130,7 @@ export function Testimonial() {
                 </motion.div>
               </AnimatePresence>
               <span className="absolute bottom-5 left-5 rounded-full bg-black/70 px-4 py-2 text-[14px] font-medium backdrop-blur-md">
-                {t.company}
+                {t.location}
               </span>
             </div>
 
@@ -133,7 +139,7 @@ export function Testimonial() {
                 <path d="M0 36V22C0 9.6 6.2 2.3 18.6 0l2 4.6C13.4 6.6 9.9 10.7 9.4 17H19v19H0Zm28 0V22C28 9.6 34.2 2.3 46.6 0l2 4.6c-7.2 2-10.7 6.1-11.2 12.4H47v19H28Z" />
               </svg>
 
-              <div className="mt-8 min-h-[220px] flex-1 sm:min-h-[200px]">
+              <div className="mt-8 min-h-[260px] flex-1 sm:min-h-[240px]">
                 <AnimatePresence mode="wait">
                   <motion.figure
                     key={index}
@@ -142,14 +148,14 @@ export function Testimonial() {
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.55, ease }}
                   >
-                    <blockquote className="headline text-[28px] leading-[1.2] text-pretty sm:text-[36px] lg:text-[40px]">
+                    <blockquote className="headline text-[24px] leading-[1.25] text-pretty sm:text-[30px] lg:text-[34px]">
                       {t.quote}
                     </blockquote>
                     <figcaption className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-3">
                       <span>
                         <span className="block text-[17px] font-semibold">{t.name}</span>
                         <span className="block text-[15px] text-white/50">
-                          {t.role}, {t.company}
+                          {t.role} · {t.location}
                         </span>
                       </span>
                       <span className="rounded-full bg-black px-4 py-2 text-[14px] font-medium sm:ml-auto">
@@ -213,7 +219,9 @@ export function Testimonial() {
                       <span className={cn("block truncate text-[15px] font-semibold transition-colors", !active && "text-white/50")}>
                         {p.name}
                       </span>
-                      <span className="block truncate text-[13px] text-white/40">{p.company}</span>
+                      <span className="block truncate text-[13px] text-white/40">
+                        {p.role} · {p.location}
+                      </span>
                     </span>
 
                     {/* Autoplay progress */}

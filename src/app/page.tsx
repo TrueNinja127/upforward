@@ -4,6 +4,7 @@ import { Faq } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
 import { Header } from "@/components/landing/header";
 import { Hero } from "@/components/landing/hero";
+import { Jobs } from "@/components/landing/jobs";
 import { Manifesto } from "@/components/landing/manifesto";
 import { MotionProvider } from "@/components/landing/motion";
 import { Process } from "@/components/landing/process";
@@ -28,6 +29,7 @@ export default function Home() {
         <Record />
         <Work />
         <Testimonial />
+        <Jobs />
         <Faq />
         <Cta />
       </main>
