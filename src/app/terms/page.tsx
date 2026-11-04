@@ -37,8 +37,8 @@ const sections: LegalSection[] = [
     title: "Our services",
     body: (
       <p>
-        {site.name} provides software design, development, AI, cloud and related services. Information on the Site —
-        including descriptions of services, timelines and past work — is for general information only and is not an
+        {site.name} provides software design, development, AI, cloud and related services. Information on the Site,
+        including descriptions of services, timelines and past work, is for general information only and is not an
         offer. Any engagement is governed by a separate written agreement, such as a statement of work or master
         services agreement, which takes precedence over these Terms where they conflict.
       </p>
@@ -66,7 +66,7 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          The Site and its content — including text, graphics, logos, illustrations and code — are owned by or
+          The Site and its content, including text, graphics, logos, illustrations and code, are owned by or
           licensed to {site.name} and protected by intellectual-property laws. You may view and share pages for
           personal or internal business purposes, but you may not copy, modify, distribute or reuse them commercially
           without our written permission.
@@ -85,7 +85,7 @@ const sections: LegalSection[] = [
       <p>
         When you send us project details, ideas or other materials, you confirm you have the right to share them. We
         treat them confidentially and use them only to evaluate and respond to your enquiry. We are happy to sign a
-        non-disclosure agreement before you share anything sensitive — just ask.
+        non-disclosure agreement before you share anything sensitive. Just ask.
       </p>
     ),
   },
@@ -105,7 +105,7 @@ const sections: LegalSection[] = [
     body: (
       <p>
         The Site is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo;. To the fullest extent permitted by
-        law, we make no warranties, express or implied, about the Site — including warranties of accuracy,
+        law, we make no warranties, express or implied, about the Site, including warranties of accuracy,
         availability, merchantability, fitness for a particular purpose or non-infringement. Warranties for our
         services, if any, are those stated in the client agreement.
       </p>

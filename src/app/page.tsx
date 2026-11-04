@@ -13,6 +13,9 @@ import { Testimonial } from "@/components/landing/testimonial";
 import { Work } from "@/components/landing/work";
 import { homeJsonLd } from "@/lib/structured-data";
 
+// The jobs section reads open roles from the database; re-render at most once a minute.
+export const revalidate = 60;
+
 export default function Home() {
   return (
     <MotionProvider>

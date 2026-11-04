@@ -6,6 +6,8 @@ import type { ApplicationRow, LoginTokenPurpose } from "@/lib/supabase/types";
 /*
  * Applicant sessions (cookie tokens, one per device) and email sign-in links.
  * Only hashes are stored; the raw token travels in the cookie or the link.
+ * The admin panel issues "notification" links the same way (same hashing) when
+ * it emails an applicant about unread replies, and they are consumed here.
  */
 
 const LOGIN_LINK_MINUTES = 15;
@@ -30,7 +32,7 @@ export async function createLoginToken(applicationId: string, purpose: LoginToke
   const db = supabaseAdmin();
   const token = randomToken(32);
   const ttlMs = purpose === "login" ? LOGIN_LINK_MINUTES * 60_000 : NOTIFICATION_LINK_DAYS * 86_400_000;
-  const { error } = await db.from("login_tokens").insert({
+  const { error } = await db.from("applicant_login_tokens").insert({
     application_id: applicationId,
     token_hash: await sha256Hex(token),
     purpose,
@@ -38,14 +40,14 @@ export async function createLoginToken(applicationId: string, purpose: LoginToke
   });
   if (error) throw error;
   // Opportunistic cleanup of expired links.
-  await db.from("login_tokens").delete().lt("expires_at", new Date().toISOString());
+  await db.from("applicant_login_tokens").delete().lt("expires_at", new Date().toISOString());
   return token;
 }
 
 /** True when a login link for this application was issued in the last minute (rate limit). */
 export async function recentlyIssuedLoginLink(applicationId: string): Promise<boolean> {
   const { data } = await supabaseAdmin()
-    .from("login_tokens")
+    .from("applicant_login_tokens")
     .select("id")
     .eq("application_id", applicationId)
     .eq("purpose", "login")
@@ -63,14 +65,14 @@ export async function checkLoginToken(raw: string | undefined): Promise<TokenChe
   if (!raw || raw.length < 20 || raw.length > 128) return { ok: false, reason: "invalid" };
   const db = supabaseAdmin();
   const { data: row } = await db
-    .from("login_tokens")
+    .from("applicant_login_tokens")
     .select("*")
     .eq("token_hash", await sha256Hex(raw))
     .maybeSingle();
   if (!row) return { ok: false, reason: "invalid" };
   if (new Date(row.expires_at).getTime() < Date.now()) return { ok: false, reason: "expired" };
   if (row.purpose === "login" && row.used_at) return { ok: false, reason: "used" };
-  const { data: application } = await db.from("applications").select("*").eq("id", row.application_id).maybeSingle();
+  const { data: application } = await db.from("job_applications").select("*").eq("id", row.application_id).maybeSingle();
   if (!application) return { ok: false, reason: "invalid" };
   return { ok: true, application, tokenId: row.id, purpose: row.purpose };
 }
@@ -83,7 +85,7 @@ export async function consumeLoginToken(raw: string | undefined): Promise<TokenC
   if (check.purpose === "login") {
     // Atomic single-use claim.
     const { data } = await db
-      .from("login_tokens")
+      .from("applicant_login_tokens")
       .update({ used_at: new Date().toISOString() })
       .eq("id", check.tokenId)
       .is("used_at", null)
@@ -97,7 +99,7 @@ export async function consumeLoginToken(raw: string | undefined): Promise<TokenC
 /** Most recent application for an email address, if any. */
 export async function findApplicationByEmail(email: string): Promise<ApplicationRow | null> {
   const { data } = await supabaseAdmin()
-    .from("applications")
+    .from("job_applications")
     .select("*")
     .ilike("email", email.trim())
     .order("created_at", { ascending: false })

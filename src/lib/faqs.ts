@@ -14,7 +14,7 @@ export const faqs = [
   },
   {
     q: "Who owns the code and IP?",
-    a: "You do — 100%, from the first commit. Everything lives in your repositories and your cloud accounts.",
+    a: "You do: 100%, from the first commit. Everything lives in your repositories and your cloud accounts.",
   },
   {
     q: "Can you support the product after launch?",

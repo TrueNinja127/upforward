@@ -7,21 +7,28 @@ import { Header } from "@/components/landing/header";
 import { MotionProvider } from "@/components/landing/motion";
 import { Container } from "@/components/landing/section-heading";
 import { ApplyForm } from "@/components/jobs/apply-form";
-import { compensation, employment, getJob, jobs, requirements } from "@/lib/jobs";
+import { jobTags, requirements } from "@/lib/jobs";
+import { getOpenJob, listOpenJobs } from "@/lib/jobs-db";
 import { site } from "@/lib/site";
 
-export function generateStaticParams() {
+// Roles are managed in the admin panel; re-render at most once a minute so edits show up without a deploy.
+export const revalidate = 60;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const jobs = await listOpenJobs();
   return jobs.map((job) => ({ slug: job.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/jobs/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const job = getJob(slug);
+  const job = await getOpenJob(slug);
   if (!job) return {};
   const title = `${job.title} (Remote, US)`;
+  const description = [job.summary, job.compensation_headline, `Apply to join ${site.name}.`].filter(Boolean).join(" ");
   return {
     title,
-    description: `${job.summary} ${compensation.headline}. Apply to join ${site.name}.`,
+    description,
     alternates: { canonical: `/jobs/${job.slug}` },
     openGraph: { url: `/jobs/${job.slug}`, title: `${title} · ${site.name}`, description: job.summary },
   };
@@ -29,16 +36,16 @@ export async function generateMetadata({ params }: PageProps<"/jobs/[slug]">): P
 
 export default async function JobPage({ params }: PageProps<"/jobs/[slug]">) {
   const { slug } = await params;
-  const job = getJob(slug);
+  const [job, openJobs] = await Promise.all([getOpenJob(slug), listOpenJobs()]);
   if (!job) notFound();
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
-    description: `<p>${job.about}</p><p>Compensation: ${compensation.headline}. ${compensation.detail}</p>`,
-    datePosted: "2026-11-04",
-    employmentType: "CONTRACTOR",
+    description: `<p>${job.about}</p>${job.compensation_headline ? `<p>Compensation: ${job.compensation_headline}. ${job.compensation_detail}</p>` : ""}`,
+    datePosted: job.created_at.slice(0, 10),
+    employmentType: job.employment_type.toLowerCase().includes("contract") ? "CONTRACTOR" : job.employment_type.toUpperCase().replace(/[^A-Z_]/g, "_"),
     hiringOrganization: { "@type": "Organization", name: site.name, sameAs: site.url, logo: `${site.url}/icon.png` },
     jobLocationType: "TELECOMMUTE",
     applicantLocationRequirements: { "@type": "Country", name: "United States" },
@@ -70,7 +77,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[slug]">) {
               {job.summary}
             </p>
             <ul className="mt-8 flex flex-wrap gap-2 text-[14px]">
-              {[employment.location, employment.type, employment.schedule, compensation.headline].map((tag) => (
+              {jobTags(job).map((tag) => (
                 <li key={tag} className="rounded-full bg-card px-4 py-2">
                   {tag}
                 </li>
@@ -82,14 +89,18 @@ export default async function JobPage({ params }: PageProps<"/jobs/[slug]">) {
             {/* Description */}
             <article className="space-y-14 lg:col-span-7">
               <Section title="About the role">
-                <p>{job.about}</p>
+                <p className="whitespace-pre-line">{job.about}</p>
               </Section>
-              <Section title="What you'll do">
-                <List items={job.responsibilities} />
-              </Section>
-              <Section title="What we're looking for">
-                <List items={job.skills} />
-              </Section>
+              {job.responsibilities.length > 0 && (
+                <Section title="What you'll do">
+                  <List items={job.responsibilities} />
+                </Section>
+              )}
+              {job.skills.length > 0 && (
+                <Section title="What we're looking for">
+                  <List items={job.skills} />
+                </Section>
+              )}
               <Section title="Requirements">
                 <ul className="grid gap-3 sm:grid-cols-3">
                   {requirements.map((r) => (
@@ -103,12 +114,16 @@ export default async function JobPage({ params }: PageProps<"/jobs/[slug]">) {
                   ))}
                 </ul>
               </Section>
-              <Section title="Compensation">
-                <div className="rounded-[28px] bg-card p-6 sm:p-8">
-                  <p className="headline text-[40px] sm:text-[52px]">{compensation.headline}</p>
-                  <p className="mt-3 text-[16px] leading-relaxed text-white/60">{compensation.detail}</p>
-                </div>
-              </Section>
+              {job.compensation_headline && (
+                <Section title="Compensation">
+                  <div className="rounded-[28px] bg-card p-6 sm:p-8">
+                    <p className="headline text-[40px] sm:text-[52px]">{job.compensation_headline}</p>
+                    {job.compensation_detail && (
+                      <p className="mt-3 text-[16px] leading-relaxed text-white/60">{job.compensation_detail}</p>
+                    )}
+                  </div>
+                </Section>
+              )}
               <Section title="How it works">
                 <ol className="space-y-4">
                   {[
@@ -133,7 +148,7 @@ export default async function JobPage({ params }: PageProps<"/jobs/[slug]">) {
                 <h2 className="headline text-[28px]">Apply for this role</h2>
                 <p className="mt-2 text-[15px] text-white/50">We reply to every application, usually the same day.</p>
                 <div className="mt-6">
-                  <ApplyForm role={job.slug} />
+                  <ApplyForm role={job.slug} jobs={openJobs.map((j) => ({ slug: j.slug, title: j.title }))} />
                 </div>
               </div>
             </aside>

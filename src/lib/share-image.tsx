@@ -11,7 +11,7 @@ import { site } from "@/lib/site";
  */
 
 export const shareImageSize = { width: 1200, height: 630 };
-export const shareImageAlt = `${site.name} — ${site.tagline} Senior software engineering team for web, mobile and AI products.`;
+export const shareImageAlt = `${site.name}: ${site.tagline} Senior software engineering team for web, mobile and AI products.`;
 
 const fontDir = join(process.cwd(), "assets/fonts");
 

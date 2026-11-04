@@ -3,8 +3,12 @@ import { Resend } from "resend";
 import { site } from "@/lib/site";
 
 /*
- * Transactional email via Resend. When RESEND_API_KEY is missing, sending is a
- * no-op that logs the email instead, so local development works without keys.
+ * Transactional email via Resend – the same Resend account and verified domain
+ * as the admin panel. This site sends sign-in links to applicants and alerts
+ * the team about new applications and unread applicant messages; the panel
+ * emails applicants about unread replies. When RESEND_API_KEY is missing,
+ * sending is a no-op that logs the email instead, so local development works
+ * without keys.
  */
 
 let client: Resend | undefined;
@@ -85,27 +89,12 @@ export function chatSignInEmail({ to, name, url }: { to: string; name: string; u
   };
 }
 
-export function applicantUnreadEmail({ to, name, preview, count, url }: { to: string; name: string; preview: string; count: number; url: string }): Email {
-  const first = name.split(/\s+/)[0];
-  const intro =
-    count > 1
-      ? `Hi ${first}, the Upforward team sent you ${count} new messages. Here is the latest:`
-      : `Hi ${first}, the Upforward team sent you a new message:`;
-  const footer = "The button signs you in automatically on any device and stays valid for 7 days. You receive at most one email per batch of unread messages.";
-  return {
-    to,
-    subject: count > 1 ? `${count} new messages from Upforward` : "New message from Upforward",
-    html: layout({ title: "You have a new message", intro, body: preview, cta: { label: "Reply in chat", url }, footer }),
-    text: `${intro}\n\n"${preview}"\n\nReply here: ${url}\n\n${footer}`,
-  };
-}
-
 export function adminUnreadEmail({ to, applicantName, role, preview, count, url }: { to: string; applicantName: string; role: string; preview: string; count: number; url: string }): Email {
   const intro = `${applicantName} (${role}) sent ${count > 1 ? `${count} new messages` : "a new message"} that ${count > 1 ? "are" : "is"} still unread:`;
   return {
     to,
     subject: `${applicantName}: ${count > 1 ? `${count} unread messages` : "new unread message"}`,
-    html: layout({ title: "Unread applicant message", intro, body: preview, cta: { label: "Open in admin", url }, footer: "Sent by the Upforward admin inbox." }),
+    html: layout({ title: "Unread applicant message", intro, body: preview, cta: { label: "Open in admin panel", url }, footer: "Sent by upforward.org. Reply from the Applicants page in the admin panel." }),
     text: `${intro}\n\n"${preview}"\n\n${url}`,
   };
 }
@@ -115,7 +104,7 @@ export function adminNewApplicationEmail({ to, name, role, email, phone, locatio
   return {
     to,
     subject: `New application: ${name} · ${role}`,
-    html: layout({ title: "New application", intro: `${name} just applied for the ${role} role.`, body: details, cta: { label: "Open conversation", url }, footer: "Sent by the Upforward admin inbox." }),
+    html: layout({ title: "New application", intro: `${name} just applied for the ${role} role.`, body: details, cta: { label: "Open conversation", url }, footer: "Sent by upforward.org. Reply from the Applicants page in the admin panel." }),
     text: `${name} just applied for the ${role} role.\n\n${details}\n\n${url}`,
   };
 }

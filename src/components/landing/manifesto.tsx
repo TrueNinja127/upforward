@@ -5,7 +5,7 @@ import { motion, useScroll, useTransform, type MotionValue } from "motion/react"
 import { Container } from "./section-heading";
 
 const TEXT =
-  "We are a senior engineering team for companies that refuse to stand still. We study the play, move with precision and finish every project cleanly — so your product doesn't just launch. It rises.";
+  "We are a senior engineering team for companies that refuse to stand still. We study the play, move with precision and finish every project cleanly, so your product doesn't just launch. It rises.";
 
 const words = TEXT.split(" ");
 

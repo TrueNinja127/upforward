@@ -6,7 +6,7 @@ import { ChatSignInForm } from "@/components/chat/chat-sign-in-form";
 import { Logo } from "@/components/landing/logo";
 import { conversationTopic } from "@/lib/chat/channels";
 import { getApplicantContext, listMessages } from "@/lib/chat/dal";
-import { applicationStatusLabel, getJob } from "@/lib/jobs";
+import { applicationStatusLabel } from "@/lib/jobs";
 import { site } from "@/lib/site";
 import { markApplicantRead, sendApplicantMessage, signOutApplicant, syncApplicantMessages } from "./actions";
 
@@ -21,9 +21,9 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
 
   if (!ctx) return <SignIn linkProblem={typeof link === "string" ? link : undefined} />;
 
-  const { application, conversation } = ctx;
-  const [messages, topic] = await Promise.all([listMessages(conversation.id), conversationTopic(conversation.id)]);
-  const job = getJob(application.role);
+  const { application, job, conversation } = ctx;
+  const messages = await listMessages(conversation.id);
+  const topic = conversationTopic(conversation);
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -43,7 +43,7 @@ export default async function ChatPage({ searchParams }: PageProps<"/chat">) {
               </p>
             )}
             <p className="text-[13px] text-white/50">Your application</p>
-            <h1 className="headline mt-2 text-[28px]">{job?.title ?? application.role}</h1>
+            <h1 className="headline mt-2 text-[28px]">{job?.title ?? "Open role"}</h1>
             <dl className="mt-5 space-y-3 text-[14px]">
               <Row label="Status">
                 <span className="rounded-full bg-black px-3 py-1 text-[13px]">{applicationStatusLabel[application.status]}</span>

@@ -3,12 +3,14 @@ export const site = {
   name: "Upforward",
   // Set NEXT_PUBLIC_SITE_URL to the production domain; used for canonical and share URLs.
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "https://upforward.org").replace(/\/$/, ""),
+  // The admin panel where jobs are managed and applicant chats are answered.
+  adminUrl: (process.env.ADMIN_URL ?? "https://admin.upforward.org").replace(/\/$/, ""),
   // ~60 characters so it isn't truncated in search results.
-  title: "Upforward — Software Development Company for Web, Mobile & AI",
+  title: "Upforward | Software Development Company for Web, Mobile & AI",
   tagline: "Built to rise.",
   // ~155 characters: the snippet Google shows under the title.
   description:
-    "Senior software engineering team that designs, builds and launches web platforms, mobile apps and AI products — from first call to production in weeks.",
+    "Senior software engineering team that designs, builds and launches web platforms, mobile apps and AI products, from first call to production in weeks.",
   email: "info@upforward.org",
   foundingYear: "2018",
   // Add real profile URLs (LinkedIn, GitHub, X…) once they exist; they feed structured data.

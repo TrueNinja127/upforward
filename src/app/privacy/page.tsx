@@ -37,15 +37,15 @@ const sections: LegalSection[] = [
         <p>We collect only what we need to respond to you and to deliver our work:</p>
         <ul>
           <li>
-            <strong>Information you give us</strong> — such as your name, work email, company, and the project details
+            <strong>Information you give us</strong>, such as your name, work email, company, and the project details
             you share when you submit a form, email us or book a call.
           </li>
           <li>
-            <strong>Client engagement information</strong> — contact details of your team, contracts, invoices and
+            <strong>Client engagement information</strong>: contact details of your team, contracts, invoices and
             communications exchanged while we work together.
           </li>
           <li>
-            <strong>Technical information</strong> — standard data your browser sends when you visit the Site, such as
+            <strong>Technical information</strong>: standard data your browser sends when you visit the Site, such as
             IP address, browser type, device, referring page and pages viewed, which our hosting provider may record
             in server logs.
           </li>
@@ -85,8 +85,8 @@ const sections: LegalSection[] = [
         <p>We share personal information only when necessary, with:</p>
         <ul>
           <li>
-            <strong>Service providers</strong> who help us operate — for example hosting, email, scheduling,
-            project-management and accounting tools — under contracts that limit their use of the data;
+            <strong>Service providers</strong> who help us operate, for example hosting, email, scheduling,
+            project-management and accounting tools, under contracts that limit their use of the data;
           </li>
           <li>
             <strong>Professional advisers</strong> such as lawyers and accountants, under duties of confidentiality;
@@ -153,8 +153,8 @@ const sections: LegalSection[] = [
     body: (
       <p>
         We work with clients and service providers around the world, so your information may be processed in
-        countries other than your own. Where required, we use appropriate safeguards — such as standard contractual
-        clauses — to protect it.
+        countries other than your own. Where required, we use appropriate safeguards, such as standard contractual
+        clauses, to protect it.
       </p>
     ),
   },

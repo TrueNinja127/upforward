@@ -23,8 +23,8 @@ export async function sendApplicantMessage(body: string): Promise<SendResult> {
   if (!trimmed) return { error: "Message can't be empty." };
   if (trimmed.length > 4000) return { error: "Message is too long (4000 characters max)." };
   try {
-    const { conversation } = await requireApplicant();
-    const message = await createMessage(conversation.id, "applicant", trimmed);
+    const ctx = await requireApplicant();
+    const message = await createMessage(ctx, "applicant", trimmed);
     return { message };
   } catch (err) {
     console.error("[chat] applicant send failed", err);
@@ -35,7 +35,7 @@ export async function sendApplicantMessage(body: string): Promise<SendResult> {
 export async function markApplicantRead(): Promise<void> {
   try {
     const { conversation } = await requireApplicant();
-    await markRead(conversation.id, "applicant");
+    await markRead(conversation, "applicant");
   } catch (err) {
     console.error("[chat] applicant markRead failed", err);
   }

@@ -33,7 +33,7 @@ const stages: {
     phase: "Build",
     when: "Weeks 2–5",
     title: "Rise up.",
-    body: "Weekly releases and live demos. Relentless momentum and full visibility — never a black box.",
+    body: "Weekly releases and live demos. Relentless momentum and full visibility. Never a black box.",
     outputs: ["Weekly releases", "Live demos", "Automated tests"],
     figure: "/players/jump.svg",
   },
@@ -54,7 +54,7 @@ export function Process() {
         <SectionHeading
           eyebrow="Process"
           title="Four moves. One clean finish."
-          description="A proven playbook refined over 120+ launches. You stay courtside for every move — and your launch stays on schedule."
+          description="A proven playbook refined over 120+ launches. You stay courtside for every move, and your launch stays on schedule."
         />
 
         <ol className="mt-14 grid gap-4 sm:mt-20 md:grid-cols-2">

@@ -7,7 +7,7 @@ import { site } from "@/lib/site";
  * understand Upforward without parsing the layout.
  *
  * Testimonials are placeholders, so no Review/AggregateRating markup is
- * emitted — add it only once the reviews are real and verifiable.
+ * emitted; add it only once the reviews are real and verifiable.
  */
 
 const org = `${site.url}/#organization`;

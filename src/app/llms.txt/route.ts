@@ -9,7 +9,7 @@ export function GET() {
 
 > ${site.description}
 
-${site.name} is a senior software engineering team founded in ${site.foundingYear}, working with companies worldwide. Every project follows a four-stage process — Discover, Design, Build, Launch — and typically reaches production in about six weeks.
+${site.name} is a senior software engineering team founded in ${site.foundingYear}, working with companies worldwide. Every project follows a four-stage process (Discover, Design, Build, Launch) and typically reaches production in about six weeks.
 
 ## Services
 

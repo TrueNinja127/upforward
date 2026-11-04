@@ -1,139 +1,109 @@
 import "server-only";
 import { cache } from "react";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import type {
-  ApplicationRow,
-  ApplicationStatus,
-  ConversationOverviewRow,
-  ConversationRow,
-  MessageRow,
-  MessageSender,
-} from "@/lib/supabase/types";
+import { getJobById } from "@/lib/jobs-db";
 import { applicantTokenHash } from "@/lib/session";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { ApplicationRow, ConversationRow, JobRow, MessageRow, MessageSender } from "@/lib/supabase/types";
 import { broadcast } from "./broadcast";
-import { adminInboxTopic, conversationTopic, EVENTS, type MessageEvent } from "./channels";
-import { resetNotificationMarker, scheduleUnreadNotification } from "./notify";
+import { conversationTopic, EVENTS, type MessageEvent } from "./channels";
+import { notifyPanelOfApplicantMessage, resetNotificationMarker } from "./notify";
+import { publishPanelEvent } from "./panel";
 
 /*
- * Data Access Layer. Every function here runs with the service-role key, so
- * callers must verify the applicant cookie or the admin session before
- * reaching any write path.
+ * Data Access Layer for the applicant side of the chat. Every function runs
+ * with the service-role key, so callers must verify the applicant cookie
+ * before reaching any write path. The admin side lives in the admin panel
+ * (tnboard/src/lib/applicants/dal.ts) and writes to the same tables.
  */
 
 export type ApplicantContext = {
   application: ApplicationRow;
+  /** Null only if the role was deleted after they applied. */
+  job: JobRow | null;
   conversation: ConversationRow;
 };
+
+/** PostgREST returns timestamps with a "+00:00" offset; the UI and the panel use the "Z" form. */
+const iso = (value: string) => new Date(value).toISOString();
+export const normaliseMessage = (m: MessageRow): MessageRow => ({ ...m, created_at: iso(m.created_at), read_at: m.read_at ? iso(m.read_at) : null });
 
 /** Resolves the applicant behind the current request's cookie, if any. */
 export const getApplicantContext = cache(async (): Promise<ApplicantContext | null> => {
   const hash = await applicantTokenHash();
   if (!hash) return null;
   const db = supabaseAdmin();
-  const { data: session } = await db
-    .from("applicant_sessions")
-    .select("application_id")
-    .eq("token_hash", hash)
-    .maybeSingle();
+  const { data: session } = await db.from("applicant_sessions").select("application_id").eq("token_hash", hash).maybeSingle();
   if (!session) return null;
-  const { data: application } = await db
-    .from("applications")
-    .select("*")
-    .eq("id", session.application_id)
-    .maybeSingle();
+  const { data: application } = await db.from("job_applications").select("*").eq("id", session.application_id).maybeSingle();
   if (!application) return null;
-  const { data: conversation } = await db
-    .from("conversations")
-    .select("*")
-    .eq("application_id", application.id)
-    .maybeSingle();
+  const [job, { data: conversation }] = await Promise.all([
+    getJobById(application.job_id).catch(() => null),
+    db.from("applicant_conversations").select("*").eq("application_id", application.id).maybeSingle(),
+  ]);
   if (!conversation) return null;
-  return { application, conversation };
+  return { application, job, conversation };
 });
 
 export async function listMessages(conversationId: string, limit = 300): Promise<MessageRow[]> {
   const { data, error } = await supabaseAdmin()
-    .from("messages")
+    .from("applicant_messages")
     .select("*")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
     .limit(limit);
   if (error) throw error;
-  return data;
+  return data.map(normaliseMessage);
 }
 
-/** Stores a message, then fans it out over Realtime to the room and the admin inbox. */
+/**
+ * Stores a message and fans it out over Realtime to the conversation. The
+ * conversation summary (last message, preview) is kept in sync by a database
+ * trigger. Applicant messages also notify the admin panel.
+ */
 export async function createMessage(
-  conversationId: string,
+  context: Pick<ApplicantContext, "conversation"> & Partial<Pick<ApplicantContext, "application" | "job">>,
   sender: MessageSender,
   body: string
 ): Promise<MessageRow> {
+  const { conversation } = context;
   const { data, error } = await supabaseAdmin()
-    .from("messages")
-    .insert({ conversation_id: conversationId, sender, body })
+    .from("applicant_messages")
+    .insert({ conversation_id: conversation.id, sender, body })
     .select("*")
     .single();
   if (error) throw error;
+  const message = normaliseMessage(data);
 
   const event: MessageEvent = {
-    id: data.id,
-    conversation_id: data.conversation_id,
-    sender: data.sender,
-    body: data.body,
-    created_at: data.created_at,
+    id: message.id,
+    conversation_id: message.conversation_id,
+    sender: message.sender,
+    body: message.body,
+    created_at: message.created_at,
   };
-  await Promise.all([
-    broadcast(await conversationTopic(conversationId), EVENTS.message, event),
-    broadcast(await adminInboxTopic(), EVENTS.inboxUpdate, { conversation_id: conversationId }),
-  ]);
-  scheduleUnreadNotification(conversationId, sender);
-  return data;
+  await broadcast(conversationTopic(conversation), EVENTS.message, event);
+
+  if (sender === "applicant" && context.application) {
+    await notifyPanelOfApplicantMessage({ application: context.application, job: context.job ?? null, conversation, body: message.body });
+  }
+  return message;
 }
 
 /** Marks everything the other party sent as read. */
-export async function markRead(conversationId: string, reader: MessageSender): Promise<void> {
+export async function markRead(conversation: ConversationRow, reader: MessageSender): Promise<void> {
   const other: MessageSender = reader === "admin" ? "applicant" : "admin";
   const { error, count } = await supabaseAdmin()
-    .from("messages")
+    .from("applicant_messages")
     .update({ read_at: new Date().toISOString() }, { count: "exact" })
-    .eq("conversation_id", conversationId)
+    .eq("conversation_id", conversation.id)
     .eq("sender", other)
     .is("read_at", null);
   if (error) throw error;
   if (!count) return;
   await Promise.all([
-    resetNotificationMarker(conversationId, reader),
-    broadcast(await conversationTopic(conversationId), EVENTS.read, { reader }),
-    reader === "admin"
-      ? broadcast(await adminInboxTopic(), EVENTS.inboxUpdate, { conversation_id: conversationId })
-      : Promise.resolve(),
+    resetNotificationMarker(conversation.id, reader),
+    broadcast(conversationTopic(conversation), EVENTS.read, { reader }),
+    // Read receipts matter to the panel's open chat ("Seen").
+    publishPanelEvent({ kind: "applicants", conversationId: conversation.id, applicationId: conversation.application_id }),
   ]);
-}
-
-/* Admin ----------------------------------------------------------------------- */
-
-/** Cached per request so the admin layout and page share one query. */
-export const listConversationOverview = cache(async (): Promise<ConversationOverviewRow[]> => {
-  const { data, error } = await supabaseAdmin()
-    .from("conversation_overview")
-    .select("*")
-    .order("last_message_at", { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  return data;
-});
-
-export async function getConversationOverview(conversationId: string): Promise<ConversationOverviewRow | null> {
-  const { data, error } = await supabaseAdmin()
-    .from("conversation_overview")
-    .select("*")
-    .eq("id", conversationId)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
-export async function updateApplicationStatus(applicationId: string, status: ApplicationStatus): Promise<void> {
-  const { error } = await supabaseAdmin().from("applications").update({ status }).eq("id", applicationId);
-  if (error) throw error;
-  await broadcast(await adminInboxTopic(), EVENTS.inboxUpdate, { application_id: applicationId });
 }

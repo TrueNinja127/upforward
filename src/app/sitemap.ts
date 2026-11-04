@@ -1,8 +1,11 @@
 import type { MetadataRoute } from "next";
-import { jobs } from "@/lib/jobs";
+import { listOpenJobs } from "@/lib/jobs-db";
 import { site } from "@/lib/site";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const revalidate = 3600;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const jobs = await listOpenJobs();
   return [
     {
       url: site.url,
@@ -12,7 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...jobs.map((job) => ({
       url: `${site.url}/jobs/${job.slug}`,
-      lastModified: new Date(),
+      lastModified: new Date(job.updated_at),
       changeFrequency: "weekly" as const,
       priority: 0.7,
     })),

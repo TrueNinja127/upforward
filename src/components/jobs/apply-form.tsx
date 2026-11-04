@@ -4,13 +4,13 @@ import { useActionState, useId } from "react";
 import { Loader2Icon } from "lucide-react";
 import { submitApplication, type ApplyState } from "@/app/jobs/actions";
 import { pillButton } from "@/components/landing/pill-button";
-import { jobs } from "@/lib/jobs";
-import type { JobRole } from "@/lib/supabase/types";
 import { cn } from "@/lib/utils";
 
 const initial: ApplyState = {};
 
-export function ApplyForm({ role }: { role: JobRole }) {
+export type ApplyFormJob = { slug: string; title: string };
+
+export function ApplyForm({ role, jobs }: { role: string; jobs: ApplyFormJob[] }) {
   const [state, action, pending] = useActionState(submitApplication, initial);
   const id = useId();
   const errs = state.fieldErrors ?? {};

@@ -32,7 +32,7 @@ export function Hero() {
 
         <motion.h1 {...fade(0.35)} className="relative mt-16 sm:mt-20">
           <span className="block text-[17px] font-medium text-white/60 sm:text-[19px]">
-            Upforward — senior software engineering team
+            Upforward, senior software engineering team
           </span>
           <span className="headline mt-3 block text-[52px] sm:text-[88px] lg:text-[112px]">
             Built to rise.
@@ -44,7 +44,7 @@ export function Hero() {
           className="relative mt-6 max-w-2xl text-[19px] leading-relaxed text-pretty text-white/65 sm:text-[22px]"
         >
           We design, build and launch web platforms, mobile apps and AI
-          products that move companies up — and forward.
+          products that move companies up and forward.
         </motion.p>
 
         <motion.div {...fade(0.65)} className="relative mt-10 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">

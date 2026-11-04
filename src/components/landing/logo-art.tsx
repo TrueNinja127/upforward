@@ -34,7 +34,7 @@ export function AnimatedMark({ className, delay = 0 }: { className?: string; del
 }
 
 /**
- * Contour "echoes" of the UF mark radiating outward — the brand's background
+ * Contour "echoes" of the UF mark radiating outward, the brand's background
  * motif. Rendered centered on its parent; each entry in `scales` adds one
  * echo at that multiple of the mark's size.
  */

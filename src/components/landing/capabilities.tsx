@@ -17,7 +17,7 @@ const capabilities = [
   {
     title: "Mobile apps",
     lede: "Native-feeling experiences on every device.",
-    body: "Cross-platform and native apps that ship to the App Store and Google Play — and stay fast, stable and well-reviewed after launch.",
+    body: "Cross-platform and native apps that ship to the App Store and Google Play, and stay fast, stable and well-reviewed after launch.",
     deliverables: ["iOS & Android", "Offline-first sync", "Push & payments", "Store launch"],
     stack: "React Native · Swift · Kotlin",
   },
@@ -31,7 +31,7 @@ const capabilities = [
   {
     title: "Cloud & DevOps",
     lede: "Infrastructure you never have to think about.",
-    body: "Infrastructure as code, CI/CD and observability so your team can deploy every day — calmly, securely and at any scale.",
+    body: "Infrastructure as code, CI/CD and observability so your team can deploy every day: calmly, securely and at any scale.",
     deliverables: ["Cloud architecture", "CI/CD pipelines", "Observability", "Cost optimization"],
     stack: "AWS · GCP · Terraform · Kubernetes",
   },
@@ -92,7 +92,7 @@ export function Capabilities() {
         <SectionHeading
           eyebrow="Capabilities"
           title="One team. Every discipline."
-          description="Strategy, design, engineering and operations under one roof — so nothing gets lost between hand-offs."
+          description="Strategy, design, engineering and operations under one roof, so nothing gets lost between hand-offs."
         />
 
         <div className="mt-16 grid gap-12 lg:mt-8 lg:grid-cols-12">

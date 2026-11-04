@@ -1,113 +1,48 @@
 import "server-only";
 import { after } from "next/server";
-import { adminNewApplicationEmail, adminUnreadEmail, applicantUnreadEmail, isEmailConfigured, sendEmail } from "@/lib/email";
-import { getJob } from "@/lib/jobs";
+import { adminNewApplicationEmail, adminUnreadEmail, isEmailConfigured, sendEmail } from "@/lib/email";
 import { site } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import type { ConversationRow, MessageSender } from "@/lib/supabase/types";
-import { createLoginToken } from "./tokens";
+import type { ApplicationRow, ConversationRow, JobRow, MessageSender } from "@/lib/supabase/types";
+import { createPanelNotification, logPanelActivity, publishPanelEvent } from "./panel";
 
 /*
- * Email notifications for unread messages.
+ * Telling the team about applicants.
  *
- * When a message is stored we wait a short grace period (so someone who is
- * already in the chat and reads it immediately gets nothing), then re-check.
- * If messages from that sender are still unread and the recipient has not been
- * emailed since they last read the conversation, we send one email. Reading the
- * conversation resets the marker, so each unread streak produces one email.
+ * Everything the applicant does is pushed into the admin panel immediately
+ * (live refresh, notification bell, activity feed). Email is the fallback for
+ * when nobody is looking at the panel: a new application is emailed right
+ * away; an applicant message is emailed only if it is still unread after a
+ * short grace period and the team has not been emailed since they last read
+ * the conversation. Reading the chat in the panel resets that marker, so each
+ * unread streak produces exactly one email. The mirror image (the panel
+ * emailing the applicant about unread replies) lives in the admin panel.
  */
 
 const DELAY_MS = Math.max(0, Number(process.env.UNREAD_NOTIFY_DELAY_SECONDS ?? 20)) * 1000;
 
-function adminEmail(): string | undefined {
-  return process.env.ADMIN_NOTIFICATION_EMAIL || undefined;
-}
+const adminEmail = () => process.env.ADMIN_NOTIFICATION_EMAIL || undefined;
+const applicantLink = (applicationId: string) => `${site.adminUrl}/applicants/${applicationId}`;
 
-/** Schedules the unread check to run after the current response is sent. */
-export function scheduleUnreadNotification(conversationId: string, sender: MessageSender) {
-  if (!isEmailConfigured()) return;
-  if (sender === "applicant" && !adminEmail()) return;
-  after(async () => {
-    try {
-      if (DELAY_MS) await new Promise((r) => setTimeout(r, DELAY_MS));
-      await notifyIfStillUnread(conversationId, sender);
-    } catch (err) {
-      console.error("[notify] unread check failed", err);
-    }
-  });
-}
-
-async function notifyIfStillUnread(conversationId: string, sender: MessageSender) {
-  const db = supabaseAdmin();
-  const recipientColumn = sender === "admin" ? "applicant_notified_at" : "admin_notified_at";
-  const now = new Date().toISOString();
-  const claim: Partial<ConversationRow> =
-    sender === "admin" ? { applicant_notified_at: now } : { admin_notified_at: now };
-
-  const { data: conversation } = await db
-    .from("conversations")
-    .select("id, application_id, applicant_notified_at, admin_notified_at")
-    .eq("id", conversationId)
-    .maybeSingle();
-  if (!conversation) return;
-  if (conversation[recipientColumn]) return; // already emailed for this unread streak
-
-  const { data: unread } = await db
-    .from("messages")
-    .select("body, created_at")
-    .eq("conversation_id", conversationId)
-    .eq("sender", sender)
-    .is("read_at", null)
-    .order("created_at", { ascending: false });
-  if (!unread?.length) return;
-
-  const { data: application } = await db
-    .from("applications")
-    .select("id, name, email, phone, location, role")
-    .eq("id", conversation.application_id)
-    .maybeSingle();
-  if (!application) return;
-
-  // Claim the slot first so concurrent checks don't double-send.
-  const { data: claimed } = await db
-    .from("conversations")
-    .update(claim)
-    .eq("id", conversationId)
-    .is(recipientColumn, null)
-    .select("id");
-  if (!claimed?.length) return;
-
-  const preview = unread[0].body.length > 280 ? `${unread[0].body.slice(0, 277)}…` : unread[0].body;
-  const roleTitle = getJob(application.role)?.title ?? application.role;
-
-  if (sender === "admin") {
-    const token = await createLoginToken(application.id, "notification");
-    const url = `${site.url}/chat/verify?token=${encodeURIComponent(token)}`;
-    await sendEmail(applicantUnreadEmail({ to: application.email, name: application.name, preview, count: unread.length, url }));
-  } else {
-    const to = adminEmail();
-    if (!to) return;
-    const url = `${site.url}/admin/conversations/${conversationId}`;
-    await sendEmail(adminUnreadEmail({ to, applicantName: application.name, role: roleTitle, preview, count: unread.length, url }));
+/** New application: panel notification + activity, live refresh, optional email. */
+export async function notifyPanelOfApplication(input: { application: ApplicationRow; job: JobRow; conversationId: string }): Promise<void> {
+  const { application, job, conversationId } = input;
+  const link = applicantLink(application.id);
+  try {
+    await Promise.all([
+      logPanelActivity("applicant.applied", `${application.name} applied for ${job.title}`, { applicationId: application.id, conversationId }),
+      createPanelNotification({
+        type: "contact",
+        title: `New application: ${application.name} · ${job.title}`,
+        body: `${application.location} · ${application.email}`,
+        link,
+      }),
+    ]);
+    await publishPanelEvent({ kind: "applicants", conversationId, applicationId: application.id });
+  } catch (err) {
+    console.error("[notify] panel update failed", err);
   }
-}
 
-/** Clears the "already emailed" marker once the recipient has read the conversation. */
-export async function resetNotificationMarker(conversationId: string, reader: MessageSender) {
-  const reset: Partial<ConversationRow> =
-    reader === "applicant" ? { applicant_notified_at: null } : { admin_notified_at: null };
-  await supabaseAdmin().from("conversations").update(reset).eq("id", conversationId);
-}
-
-/** Emails the admin about a brand-new application (runs after the response). */
-export function scheduleNewApplicationNotification(input: {
-  conversationId: string;
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  role: string;
-}) {
   const to = adminEmail();
   if (!to || !isEmailConfigured()) return;
   after(async () => {
@@ -115,16 +50,109 @@ export function scheduleNewApplicationNotification(input: {
       await sendEmail(
         adminNewApplicationEmail({
           to,
-          name: input.name,
-          role: getJob(input.role)?.title ?? input.role,
-          email: input.email,
-          phone: input.phone,
-          location: input.location,
-          url: `${site.url}/admin/conversations/${input.conversationId}`,
+          name: application.name,
+          role: job.title,
+          email: application.email,
+          phone: application.phone,
+          location: application.location,
+          url: link,
         })
       );
     } catch (err) {
       console.error("[notify] new application email failed", err);
     }
   });
+}
+
+/** Applicant message: live refresh + panel notification + activity, then an email if it stays unread. */
+export async function notifyPanelOfApplicantMessage(input: {
+  application: ApplicationRow;
+  job: JobRow | null;
+  conversation: ConversationRow;
+  body: string;
+}): Promise<void> {
+  const { application, job, conversation, body } = input;
+  const link = applicantLink(application.id);
+  try {
+    await Promise.all([
+      publishPanelEvent({ kind: "applicants", conversationId: conversation.id, applicationId: application.id }),
+      logPanelActivity("applicant.in", `${application.name} sent a message`, { applicationId: application.id, conversationId: conversation.id }),
+      createPanelNotification({
+        type: "message",
+        title: `New message from ${application.name}${job ? ` (${job.title})` : ""}`,
+        body: body.replace(/\s+/g, " ").slice(0, 160),
+        link,
+      }),
+    ]);
+  } catch (err) {
+    console.error("[notify] panel update failed", err);
+  }
+  scheduleAdminUnreadEmail(conversation.id);
+}
+
+/** Schedules the unread check to run after the current response is sent. */
+function scheduleAdminUnreadEmail(conversationId: string) {
+  if (!isEmailConfigured() || !adminEmail()) return;
+  after(async () => {
+    try {
+      if (DELAY_MS) await new Promise((r) => setTimeout(r, DELAY_MS));
+      await emailAdminIfStillUnread(conversationId);
+    } catch (err) {
+      console.error("[notify] unread check failed", err);
+    }
+  });
+}
+
+async function emailAdminIfStillUnread(conversationId: string) {
+  const to = adminEmail();
+  if (!to) return;
+  const db = supabaseAdmin();
+
+  const { data: conversation } = await db
+    .from("applicant_conversations")
+    .select("id, application_id, admin_notified_at")
+    .eq("id", conversationId)
+    .maybeSingle();
+  if (!conversation || conversation.admin_notified_at) return; // already emailed for this unread streak
+
+  const { data: unread } = await db
+    .from("applicant_messages")
+    .select("body, created_at")
+    .eq("conversation_id", conversationId)
+    .eq("sender", "applicant")
+    .is("read_at", null)
+    .order("created_at", { ascending: false });
+  if (!unread?.length) return;
+
+  const { data: application } = await db.from("job_applications").select("id, name, job_id").eq("id", conversation.application_id).maybeSingle();
+  if (!application) return;
+  const { data: job } = await db.from("jobs").select("title").eq("id", application.job_id).maybeSingle();
+
+  // Claim the slot first so concurrent checks don't double-send.
+  const { data: claimed } = await db
+    .from("applicant_conversations")
+    .update({ admin_notified_at: new Date().toISOString() })
+    .eq("id", conversationId)
+    .is("admin_notified_at", null)
+    .select("id");
+  if (!claimed?.length) return;
+
+  const latest = unread[0].body;
+  const preview = latest.length > 280 ? `${latest.slice(0, 277)}…` : latest;
+  await sendEmail(
+    adminUnreadEmail({
+      to,
+      applicantName: application.name,
+      role: job?.title ?? "Applicant",
+      preview,
+      count: unread.length,
+      url: applicantLink(application.id),
+    })
+  );
+}
+
+/** Clears the "already emailed" marker once the recipient has read the conversation. */
+export async function resetNotificationMarker(conversationId: string, reader: MessageSender) {
+  const reset: Partial<ConversationRow> = reader === "applicant" ? { applicant_notified_at: null } : { admin_notified_at: null };
+  await supabaseAdmin().from("applicant_conversations").update(reset).eq("id", conversationId);
 }

@@ -17,7 +17,7 @@ export function Cta() {
           <h2 className="headline text-[52px] sm:text-[88px] lg:text-[112px]">Let&apos;s rise.</h2>
           <p className="mx-auto mt-6 max-w-xl text-[19px] leading-relaxed text-pretty text-white/65 sm:text-[22px]">
             Tell us what you&apos;re building. We&apos;ll reply within one business day
-            with a clear plan — free, with no obligation.
+            with a clear plan, free and with no obligation.
           </p>
 
           {/* TODO: wire up to a form handler / email service */}

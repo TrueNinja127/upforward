@@ -1,21 +1,43 @@
 /**
- * Hand-written row types matching the files in supabase/migrations/.
+ * Row types for the tables this site touches. The schema lives in the admin
+ * panel's Prisma migrations (tnboard/prisma/schema.prisma) – both apps share
+ * one Supabase database. Job/applicant tables use snake_case names; the panel's
+ * own tables ("Settings", "Notification", "ActivityLog") are PascalCase.
  */
 
-export type JobRole = "virtual-assistant" | "us-partnership" | "remote-connector";
 export type ApplicationStatus = "new" | "in_review" | "interview" | "hired" | "declined";
 export type MessageSender = "applicant" | "admin";
 export type LoginTokenPurpose = "login" | "notification";
 
+export type JobRow = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  about: string;
+  responsibilities: string[];
+  skills: string[];
+  employment_type: string;
+  location: string;
+  schedule: string;
+  compensation_headline: string;
+  compensation_detail: string;
+  is_open: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ApplicationRow = {
   id: string;
-  created_at: string;
-  role: JobRole;
+  job_id: string;
   name: string;
   email: string;
   phone: string;
   location: string;
   status: ApplicationStatus;
+  created_at: string;
+  updated_at: string;
 };
 
 export type ApplicantSessionRow = {
@@ -39,6 +61,8 @@ export type LoginTokenRow = {
 export type ConversationRow = {
   id: string;
   application_id: string;
+  /** Random secret that is part of the Realtime topic name. */
+  channel_key: string;
   created_at: string;
   last_message_at: string | null;
   last_message_preview: string | null;
@@ -56,14 +80,30 @@ export type MessageRow = {
   read_at: string | null;
 };
 
-export type ConversationOverviewRow = Omit<ConversationRow, "applicant_notified_at" | "admin_notified_at"> & {
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  role: JobRole;
-  status: ApplicationStatus;
-  unread_from_applicant: number;
+/* Admin panel tables (managed by Prisma in tnboard) ------------------------------- */
+
+export type SettingsRow = {
+  id: number;
+  /** Names the panel-wide Realtime channel; lets this site notify the open panel. */
+  liveChannelKey: string;
+};
+
+export type NotificationRow = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type ActivityLogRow = {
+  id: string;
+  type: string;
+  message: string;
+  meta: string;
+  createdAt: string;
 };
 
 type Table<Row, Insert, Update = Partial<Row>> = {
@@ -77,30 +117,28 @@ type Table<Row, Insert, Update = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
-      applications: Table<
+      jobs: Table<JobRow, Partial<JobRow>>;
+      job_applications: Table<
         ApplicationRow,
-        Omit<ApplicationRow, "id" | "created_at" | "status"> & Partial<Pick<ApplicationRow, "id" | "created_at" | "status">>
+        Pick<ApplicationRow, "job_id" | "name" | "email" | "phone" | "location"> & Partial<ApplicationRow>
       >;
       applicant_sessions: Table<
         ApplicantSessionRow,
         Pick<ApplicantSessionRow, "application_id" | "token_hash"> & Partial<ApplicantSessionRow>
       >;
-      login_tokens: Table<
+      applicant_login_tokens: Table<
         LoginTokenRow,
         Pick<LoginTokenRow, "application_id" | "token_hash" | "purpose" | "expires_at"> & Partial<LoginTokenRow>
       >;
-      conversations: Table<ConversationRow, Pick<ConversationRow, "application_id"> & Partial<ConversationRow>>;
-      messages: Table<MessageRow, Pick<MessageRow, "conversation_id" | "sender" | "body"> & Partial<MessageRow>>;
+      applicant_conversations: Table<ConversationRow, Pick<ConversationRow, "application_id"> & Partial<ConversationRow>>;
+      applicant_messages: Table<MessageRow, Pick<MessageRow, "conversation_id" | "sender" | "body"> & Partial<MessageRow>>;
+      Settings: Table<SettingsRow, Partial<SettingsRow>>;
+      Notification: Table<NotificationRow, Pick<NotificationRow, "id" | "type" | "title"> & Partial<NotificationRow>>;
+      ActivityLog: Table<ActivityLogRow, Pick<ActivityLogRow, "id" | "type" | "message"> & Partial<ActivityLogRow>>;
     };
-    Views: {
-      conversation_overview: {
-        Row: ConversationOverviewRow;
-        Relationships: [];
-      };
-    };
+    Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: {
-      job_role: JobRole;
       application_status: ApplicationStatus;
       message_sender: MessageSender;
     };
