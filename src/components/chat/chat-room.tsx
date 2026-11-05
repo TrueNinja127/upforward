@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { useBrowserNotifications } from "@/hooks/use-browser-notifications";
 import { useChatChannel } from "@/hooks/use-chat-channel";
-import { usePushSubscription, type SubscriptionJson } from "@/hooks/use-push-subscription";
+import { usePushSubscription, type RegisterResult, type SubscriptionJson } from "@/hooks/use-push-subscription";
 import { ATTACHMENT_ACCEPT, formatBytes, isImageAttachment, MAX_ATTACHMENTS_PER_MESSAGE, validateAttachmentFiles } from "@/lib/chat/attachment-rules";
 import type { MessageDeletedEvent, MessageEvent, MessageUpdatedEvent } from "@/lib/chat/channels";
 import type { Attachment, MessageRow, MessageSender } from "@/lib/supabase/types";
@@ -64,12 +64,12 @@ export type ChatRoomProps = {
   sync: (after: string | null) => Promise<MessageRow[]>;
   /** VAPID public key; enables Web Push (notifications with the site closed). */
   pushPublicKey?: string | null;
-  registerPush?: (subscription: SubscriptionJson) => Promise<{ ok: boolean; error?: string }>;
+  registerPush?: (subscription: SubscriptionJson) => Promise<RegisterResult>;
   className?: string;
 };
 
 const ease = [0.22, 1, 0.36, 1] as const;
-const noRegister = async () => ({ ok: false, error: "Push is not available" });
+const noRegister = async (): Promise<RegisterResult> => ({ ok: false, error: "Push is not available" });
 
 export function ChatRoom({
   topic,
@@ -347,10 +347,13 @@ export function ChatRoom({
 
   const enableNotifications = async () => {
     const permission = await notifications.request();
-    if (permission !== "granted") return;
-    if (push.supported && registerPush) {
-      const ok = await push.subscribe();
-      setToast(ok ? "You'll be notified of replies, even with this site closed." : "Alerts are on while this tab stays open.");
+    if (permission !== "granted") {
+      if (permission === "denied") setToast("Notifications are blocked for this site in your browser settings.");
+      return;
+    }
+    if (push.supported && push.configured && registerPush) {
+      const res = await push.subscribe();
+      setToast(res.ok ? "Notifications are on. We just sent you a test one." : `Alerts work while this tab is open. Push setup failed: ${res.error}`);
     } else {
       setToast("Alerts are on while this tab stays open.");
     }
@@ -380,7 +383,7 @@ export function ChatRoom({
             {peerTyping ? "Typing…" : peerOnline ? "Online now" : "Replies here, usually within a few hours"}
           </p>
         </div>
-        <NotificationToggle permission={notifications.permission} pushState={push.state} onEnable={() => void enableNotifications()} onRetryPush={() => void push.subscribe()} />
+        <NotificationToggle permission={notifications.permission} pushState={push.state} pushError={push.lastError} onEnable={() => void enableNotifications()} onRetryPush={() => void enableNotifications()} />
         <ConnectionBadge status={status} onRetry={catchUp} />
       </div>
 
@@ -764,11 +767,13 @@ function EditBox({ value, busy, onChange, onSave, onCancel }: { value: string; b
 function NotificationToggle({
   permission,
   pushState,
+  pushError,
   onEnable,
   onRetryPush,
 }: {
   permission: "default" | "granted" | "denied" | "unsupported";
   pushState: "unsupported" | "idle" | "subscribing" | "subscribed" | "error";
+  pushError: string | null;
   onEnable: () => void;
   onRetryPush: () => void;
 }) {
@@ -786,8 +791,8 @@ function NotificationToggle({
     }
     if (pushState === "error") {
       return (
-        <button type="button" onClick={onRetryPush} className="inline-flex items-center gap-1.5 rounded-full bg-black px-3 py-1.5 text-[12px] text-white/70 hover:text-white" title="Push setup failed. Click to try again.">
-          <BellIcon className="size-3.5" /> <span className="hidden sm:inline">Retry alerts</span>
+        <button type="button" onClick={onRetryPush} className="inline-flex items-center gap-1.5 rounded-full bg-black px-3 py-1.5 text-[12px] text-red-200 hover:text-white" title={pushError ?? "Push setup failed. Click to try again."}>
+          <BellIcon className="size-3.5" /> <span className="hidden sm:inline">Alerts failed · retry</span>
         </button>
       );
     }

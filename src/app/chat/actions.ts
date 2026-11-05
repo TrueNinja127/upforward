@@ -7,7 +7,7 @@ import { MAX_ATTACHMENTS_PER_MESSAGE, validateAttachmentFiles } from "@/lib/chat
 import { createMessage, deleteMessage, editMessage, getApplicantContext, listMessages, markRead } from "@/lib/chat/dal";
 import { consumeLoginToken, createLoginToken, deleteApplicantSession, findApplicationByEmail, recentlyIssuedLoginLink } from "@/lib/chat/tokens";
 import { chatSignInEmail, isEmailConfigured, sendEmail } from "@/lib/email";
-import { deletePushSubscription, savePushSubscription, type BrowserSubscription } from "@/lib/push";
+import { deletePushSubscription, savePushSubscription, sendTestPush, type BrowserSubscription, type PushSendResult } from "@/lib/push";
 import { applicantTokenHash, clearApplicantCookie, setApplicantCookie } from "@/lib/session";
 import { site } from "@/lib/site";
 import type { MessageRow } from "@/lib/supabase/types";
@@ -89,13 +89,17 @@ export async function syncApplicantMessages(after: string | null): Promise<Messa
 
 /* Push notifications ------------------------------------------------------------- */
 
-export async function registerApplicantPush(subscription: BrowserSubscription): Promise<{ ok: boolean; error?: string }> {
+export type RegisterPushResult = { ok: boolean; error?: string; test?: PushSendResult };
+
+/** Stores this browser's Web Push subscription and sends it a test notification. */
+export async function registerApplicantPush(subscription: BrowserSubscription): Promise<RegisterPushResult> {
   try {
     if (!subscription?.endpoint || !subscription.keys?.p256dh || !subscription.keys?.auth) return { ok: false, error: "Invalid subscription." };
     const { application } = await requireApplicant();
     const userAgent = (await headers()).get("user-agent");
     await savePushSubscription({ ...subscription, scope: "applicant", applicationId: application.id, userAgent });
-    return { ok: true };
+    const test = await sendTestPush(subscription.endpoint, `${site.url}/chat`);
+    return { ok: true, test };
   } catch (err) {
     console.error("[push] register failed", err);
     return { ok: false, error: err instanceof Error ? err.message : "Could not enable notifications." };

@@ -103,6 +103,8 @@ export type PushSubscriptionRow = {
   endpoint: string;
   p256dh: string;
   auth: string;
+  /** VAPID public key the browser subscribed with; lets the sender detect a key mismatch between the two apps. */
+  application_server_key: string | null;
   user_agent: string | null;
   created_at: string;
   last_seen_at: string;
